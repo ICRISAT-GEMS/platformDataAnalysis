@@ -31,6 +31,14 @@ attachment::att_amend_desc()
 # golem::add_utils("helpers", with_test = TRUE)
 
 golem::add_fct("convert_old_unit_row_col", with_test = FALSE)
+golem::add_fct("median_computation", with_test = FALSE)
+golem::add_fct("plot_trend", with_test = FALSE)
+golem::add_fct("outlier_boxplot_detect", with_test = FALSE)
+golem::add_fct("timepoint_prop_non_missing", with_test = FALSE)
+golem::add_fct("spatial_adjustment", with_test = FALSE)
+
+golem::add_utils("spatial_adjustment_ij", with_test = FALSE)
+
 
 ## External resources
 ## Creates .js and .css files at inst/app/www
@@ -41,7 +49,37 @@ golem::add_sass_file("custom")
 
 ## Add internal datasets ----
 ## If you have data in your package
-usethis::use_data_raw(name = "my_dataset", open = FALSE)
+# usethis::use_data_raw(name = "my_dataset", open = FALSE)
+
+# raw data produced with Unit_sector_correspondance.R
+setwd("D:/Mes Donnees/WD/ICRISAT/Phenotyping/LeasyScan")
+load(file = "unit_row_col_block.RData")
+
+# (old) new
+LS_unit_row_lk <- d_unit_row_col_block$rowNum
+names(LS_unit_row_lk) <- d_unit_row_col_block$unit
+
+LS_unit_col_lk <- d_unit_row_col_block$colNum
+names(LS_unit_col_lk) <- d_unit_row_col_block$unit
+
+LS_unit_block_lk <- d_unit_row_col_block$block
+names(LS_unit_block_lk) <- d_unit_row_col_block$unit
+
+# new unit
+LS_new_unit_row_lk <- d_unit_row_col_block$rowNum
+names(LS_new_unit_row_lk) <- d_unit_row_col_block$new_unit
+
+LS_new_unit_col_lk <- d_unit_row_col_block$colNum
+names(LS_new_unit_col_lk) <- d_unit_row_col_block$new_unit
+
+LS_new_unit_block_lk <- d_unit_row_col_block$block
+names(LS_new_unit_block_lk) <- d_unit_row_col_block$new_unit
+
+setwd("D:/Mes Donnees/WD/R/packages/platform/platformDataAnalysis")
+usethis::use_data(LS_unit_row_lk, LS_unit_col_lk, LS_unit_block_lk,
+                  LS_new_unit_row_lk, LS_new_unit_col_lk, LS_new_unit_block_lk,
+                  overwrite = TRUE)
+
 
 ## Tests ----
 ## Add one line by test you want to create
