@@ -41,6 +41,11 @@
 #' @return list with three data frame containing the: a) adjusted plot data;
 #' b) the adjusted genotype data; c) the way the adjustment was performed
 #'
+#' @import SpATS
+#' @import lubridate
+#' @import ggplot2
+#' @import tidyr
+#'
 #' @export
 
 spatial_adjustment <- function(TP, traits, timePoints = NULL,
@@ -55,12 +60,13 @@ spatial_adjustment <- function(TP, traits, timePoints = NULL,
 
   # loop over the traits and the timepoints
   n_traits <- length(traits)
-  n_tp <- length(TP)
+  if(is.null(timePoints)){tp_vec <- 1:length(TP) } else {tp_vec <- timePoints}
+  n_tp <- length(tp_vec)
 
   # reference matrix to monitor the computation
   comp_monitor <- matrix(NA, nrow =  n_traits, ncol = n_tp)
   rownames(comp_monitor) <- traits
-  colnames(comp_monitor) <- names(TP)
+  colnames(comp_monitor) <- names(TP)[tp_vec]
 
   # reference plot and geno data.frame
 
@@ -69,23 +75,30 @@ spatial_adjustment <- function(TP, traits, timePoints = NULL,
   plot_res_ref <- d_TP[, 1:geno_pos]
 
   tnb_vec <- 1:length(TP)
-  tp_vec <- names(TP)
+  tp_un <- names(TP)
   geno_vec <- unique(plot_res_ref$genotype)
   n_geno <- length(geno_vec)
 
   geno_res_ref <- data.frame(timeNumber = rep(tnb_vec, each = n_geno),
-                             timePoint = rep(tp_vec, each = n_geno),
+                             timePoint = rep(tp_un, each = n_geno),
                              genotype = rep(geno_vec, length(TP)))
 
-  # plot_res_i <- vector(mode = "list", length = n_traits)
-  # geno_res_i <- vector(mode = "list", length = n_traits)
+  if(!is.null(timePoints)){
+    geno_res_ref <- geno_res_ref[geno_res_ref$timeNumber %in% timePoints, ]
+    plot_res_ref <- plot_res_ref[plot_res_ref$timeNumber %in% timePoints, ]
+  }
 
   for(i in 1:n_traits){
 
     plot_res_ij <- vector(mode = "list", length = n_tp)
     geno_res_ij <- vector(mode = "list", length = n_tp)
 
-    for(j in 1:n_tp){
+    # specific case for TR
+    if(traits[i] == "TR_VPD_slope"){ tp_vec_i <- tp_vec[1]
+    } else { tp_vec_i <- tp_vec}
+
+
+    for(j in tp_vec_i){
 
       # function that calculate the adjustment using: surface + fix, surface, or no correction
 
@@ -117,6 +130,8 @@ spatial_adjustment <- function(TP, traits, timePoints = NULL,
     # add those results to the reference df
     geno_res_ref <- left_join(x = geno_res_ref, y = geno_res_i,
                               by = c("timeNumber", "genotype"))
+
+    if(!quiet){print(traits[i])}
 
   } # end loop over traits
 

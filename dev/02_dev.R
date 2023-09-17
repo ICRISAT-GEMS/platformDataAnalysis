@@ -11,6 +11,12 @@
 #### CURRENT FILE: DEV SCRIPT #####
 ###################################
 
+library(usethis)
+library(devtools)
+library(golem)
+library(git2r)
+library(gitcreds)
+
 setwd("D:/Mes Donnees/WD/R/packages/platform/platformDataAnalysis")
 
 # Engineering
@@ -25,6 +31,12 @@ attachment::att_amend_desc()
 # golem::add_module(name = "name_of_module1", with_test = TRUE) # Name of the module
 # golem::add_module(name = "name_of_module2", with_test = TRUE) # Name of the module
 
+## Add dependencies -----
+use_package("SpATS")
+use_package("ggplot2")
+use_package("lubridate")
+use_package("tidyr")
+
 ## Add helper functions ----
 ## Creates fct_* and utils_*
 # golem::add_fct("helpers", with_test = TRUE)
@@ -36,6 +48,8 @@ golem::add_fct("plot_trend", with_test = FALSE)
 golem::add_fct("outlier_boxplot_detect", with_test = FALSE)
 golem::add_fct("timepoint_prop_non_missing", with_test = FALSE)
 golem::add_fct("spatial_adjustment", with_test = FALSE)
+golem::add_fct("add_timeNumber", with_test = FALSE)
+golem::add_fct("extract_trait_data_adj_TS", with_test = FALSE)
 
 golem::add_utils("spatial_adjustment_ij", with_test = FALSE)
 
