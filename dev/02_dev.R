@@ -36,6 +36,8 @@ use_package("SpATS")
 use_package("ggplot2")
 use_package("lubridate")
 use_package("tidyr")
+use_package("drc")
+
 
 ## Add helper functions ----
 ## Creates fct_* and utils_*
@@ -50,6 +52,14 @@ golem::add_fct("timepoint_prop_non_missing", with_test = FALSE)
 golem::add_fct("spatial_adjustment", with_test = FALSE)
 golem::add_fct("add_timeNumber", with_test = FALSE)
 golem::add_fct("extract_trait_data_adj_TS", with_test = FALSE)
+golem::add_fct("growth_curve_fit", with_test = FALSE)
+
+# could be moved in platformDataGenetics
+
+golem::add_fct("plot_h2_trend", with_test = FALSE)
+golem::add_fct("plot_growth_curve", with_test = FALSE)
+golem::add_fct("QTL_initial_scan", with_test = FALSE)
+golem::add_fct("plot_QTL_sup", with_test = FALSE)
 
 golem::add_utils("spatial_adjustment_ij", with_test = FALSE)
 

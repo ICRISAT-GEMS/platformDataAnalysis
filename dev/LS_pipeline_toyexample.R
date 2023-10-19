@@ -9,6 +9,9 @@ library(platformDataAnalysis)
 library(ggplot2)
 library(lubridate)
 
+# define reference WD
+ref_wd <- "D:/Mes Donnees/WD/R/packages/data/LS_pipeline_toyexample"
+
 # data preparation ----
 
 # PE data
@@ -44,7 +47,7 @@ d_des_s <- d_design %>% filter(row.psx %in% 1:3, col.psx %in% 1:12)
 d_exp <- d_des_s
 
 # save data
-setwd("D:/Mes Donnees/WD/R/packages/data/LS_pipeline_toyexample")
+setwd(ref_wd)
 save(d_exp, file = "exp_des.RData")
 
 # convert the row and columns in reference system: col.psx -> row
@@ -114,7 +117,7 @@ sensor_data <- sensor_data[sensor_data$unit %in% d_exp$new_unit, ]
 wth_data <- wth_data[wth_data$sensor %in% unique(sensor_data$sensor), ]
 
 # save data
-setwd("D:/Mes Donnees/WD/R/packages/data/LS_pipeline_toyexample")
+setwd(ref_wd)
 save(pe_data, file = "pe_data.RData")
 save(lc_data, file = "lc_data.RData")
 save(sensor_data, file = "sensor_data.RData")
@@ -123,7 +126,7 @@ save(wth_data, file = "weather_data.RData")
 # Initial filtering through experimental design ----
 
 # load data
-setwd("D:/Mes Donnees/WD/R/packages/data/LS_pipeline_toyexample")
+setwd(ref_wd)
 load(file = "exp_des.RData")
 load(file = "pe_data.RData")
 load(file = "lc_data.RData")
@@ -178,7 +181,7 @@ sensor_data <- sensor_data[sensor_data$unit %in% d_exp$new_unit, ]
 wth_data <- wth_data[wth_data$sensor %in% unique(sensor_data$sensor), ]
 
 # save the data
-setwd("D:/Mes Donnees/WD/R/packages/data/LS_pipeline_toyexample")
+setwd(ref_wd)
 save(d_exp, file = "exp_des_filtered.RData")
 save(pe_data, file = "pe_data_filtered.RData")
 save(lc_data, file = "lc_data_filtered.RData")
@@ -188,7 +191,7 @@ save(wth_data, file = "weather_data_filtered.RData")
 ############################ LC pipeline #######################################
 # LC pipeline: Data processing ----
 
-setwd("D:/Mes Donnees/WD/R/packages/data/LS_pipeline_toyexample")
+setwd(ref_wd)
 load(file = "pe_data_filtered.RData")
 load(file = "lc_data_filtered.RData")
 load(file = "sensor_data_filtered.RData")
@@ -222,7 +225,7 @@ wth_data$variable[wth_data$variable == "Wind Direction (°)"] <- "Wind direction
 unique(wth_data$variable)
 
 # save the data
-setwd("D:/Mes Donnees/WD/R/packages/data/LS_pipeline_toyexample")
+setwd(ref_wd)
 save(pe_data, file = "pe_data_processed.RData")
 save(lc_data, file = "lc_data_processed.RData")
 save(sensor_data, file = "sensor_data_processed.RData")
@@ -231,17 +234,13 @@ save(wth_data, file = "weather_data_processed.RData")
 # LC pipeline: TR feature data extraction (TR_data_proc) ----
 
 # load data
-setwd("D:/Mes Donnees/WD/R/packages/data/LS_pipeline_toyexample")
+setwd(ref_wd)
 load(file = "pe_data_processed.RData")
 load(file = "lc_data_processed.RData")
 load(file = "sensor_data_processed.RData")
 load(file = "weather_data_processed.RData")
 
-
 t1 <- Sys.time()
-
-# Need to modify the function to remove negative values of the smooth
-# Profile before calculating the 15 features.
 
 TR_res <- TR_data_proc(lc_data = lc_data, pe_data = pe_data,
                        wth_data = wth_data, sensor_data = sensor_data,
@@ -253,7 +252,14 @@ t2 <- Sys.time()
 t_diff <- t2 - t1
 print(t_diff)
 
+# save the results
+save(TR_res, file = "TR_res.RData")
+
 # LC pipeline: check the results shape, possible selection of days ----
+
+# load data
+setwd(ref_wd)
+load(file = "TR_res.RData")
 
 p <- plot_whole_TR_time_series(results = TR_res, sector_sel = c(2, 4, 8))
 p
@@ -287,6 +293,7 @@ p <- plot_TR_time_series(results = TR_res, trait = trait_id, n_sector = NULL,
                          color = FALSE, main = title_i)
 p
 
+
 # select days
 start_day = 1
 end_day = 8
@@ -295,13 +302,16 @@ ts_date <- colnames(TR_feature)[6:ncol(TR_feature)]
 LC_day_sel <- ts_date[start_day:end_day]
 
 # the days can be used later to subset
-TR_res <- TR_res_subset(TR_res = TR_res, start_day = 1, end_day = 8)
+TR_res <- TR_res_subset(TR_res = TR_res, start_day = start_day, end_day = end_day)
 
+# save the results
+save(TR_res, file = "TR_res_sub.RData")
 
 # LC pipeline: TR results processing TP object ----
 
-setwd("D:/Mes Donnees/WD/R/packages/data/LS_pipeline_toyexample")
+setwd(ref_wd)
 load(file = "exp_des_filtered.RData")
+load(file = "TR_res_sub.RData")
 
 d_TP <- TR_res_to_pre_TP(TR_res)
 
@@ -314,10 +324,6 @@ d_TP$TR_VPD <- TR_VPD_lk[d_TP$unit]
 # add time number
 d_TP$timestamp <- strptime(d_TP$timestamp, "%Y-%m-%d")
 d_TP <- add_timeNumber(d_TP)
-
-# timeNumber <- yday(d_TP$timestamp)
-# timeNumber <- timeNumber - min(timeNumber, na.rm = TRUE) + 1
-# d_TP <- data.frame(timeNumber, d_TP)
 d_TP <- d_TP %>% arrange(unit, timestamp)
 
 # add extra columns from the experimental design
@@ -346,18 +352,12 @@ colnames(d_TP_trait) <- tr_nm
 
 data_LC <- data.frame(d_TP_meta, d_TP_trait)
 
-# try to reduce the number of genotypes
-# data_LC$genotype[data_LC$cross == "BC10"] <- "BC10"
-
-# remove one sector
-# data_LC <- data_LC[-c(1, 9, 16), ]
-
 TP_LC <- createTimePoints(dat = data_LC,
-                       experimentName = "Exp_51_Kenin_Keni_LC",
-                       genotype = "genotype",
-                       timePoint = "timePoint",
-                       plotId = "plotId",
-                       rowNum = "rowNum", colNum = "colNum")
+                          experimentName = "Exp_51_Kenin_Keni_LC",
+                          genotype = "genotype",
+                          timePoint = "timePoint",
+                          plotId = "plotId",
+                          rowNum = "rowNum", colNum = "colNum")
 
 # LC pipeline: diagnostic plot ----
 
@@ -368,20 +368,21 @@ plot(TP_LC, traits = "max_TR",
 # LC pipeline: TR results spatial adjustment ----
 
 LC_adjusted <- spatial_adjustment(TP = TP_LC,
-                                     traits = c("max_TR", "total_auc", "TR_VPD_slope"),
-                                     timePoints = NULL,
-                                     extraFixedFactors = "block",
-                                     geno.decomp = NULL,
-                                     what = "fixed",
-                                     useCheck = FALSE,
-                                     useRepId = FALSE,
-                                     engine = "SpATS",
-                                     spatial = FALSE,
-                                     quiet = TRUE)
+                                  traits = c("max_TR", "total_auc", "TR_VPD_slope"),
+                                  timePoints = NULL,
+                                  extraFixedFactors = "block",
+                                  geno.decomp = NULL,
+                                  what = "fixed",
+                                  useCheck = FALSE,
+                                  useRepId = FALSE,
+                                  engine = "SpATS",
+                                  spatial = FALSE,
+                                  quiet = TRUE)
 
 plot_LC_adj <- LC_adjusted$plot_res
 geno_LC_adj <- LC_adjusted$geno_res
 comp_mon <- LC_adjusted$comp_monitor
+h2_LC <- LC_adjusted$h2_res
 
 # check adjusted TS
 
@@ -392,15 +393,16 @@ plot_trend(data = geno_LC_adj, trait = "max_TR_pred", genotype = TRUE)
 plot_trend(data = geno_LC_adj, trait = "total_auc_pred", genotype = TRUE)
 
 # save the data
-setwd("D:/Mes Donnees/WD/R/packages/data/LS_pipeline_toyexample")
+setwd(ref_wd)
 save(plot_LC_adj, file = "LC_plot_adjusted.RData")
 save(geno_LC_adj, file = "LC_geno_adjusted.RData")
+save(h2_LC, file = "h2_LC.RData")
 
 
 ############################ PE pipeline #######################################
 # PE pipeline: Data processing ----
 
-setwd("D:/Mes Donnees/WD/R/packages/data/LS_pipeline_toyexample")
+setwd(ref_wd)
 load(file = "pe_data_filtered.RData")
 load(file = "exp_des_filtered.RData")
 
@@ -411,8 +413,8 @@ ref_trait_nm <- c("Digital_biomass", "Height", "Leaf_angle", "Leaf_area",
                   "Light_penetration_depth")
 
 pe_data <- pe_data %>% select(unit, genotype, g_alias, treatment, timestamp,
-                        Digital_biomass, Height, Leaf_angle, Leaf_area, Leaf_area_index,
-                        Leaf_area_projected, Leaf_inclination, Light_penetration_depth)
+                              Digital_biomass, Height, Leaf_angle, Leaf_area, Leaf_area_index,
+                              Leaf_area_projected, Leaf_inclination, Light_penetration_depth)
 
 colnames(pe_data)[6:13] <- ref_trait_nm
 
@@ -421,52 +423,57 @@ pe_data$timestamp <- as.POSIXlt(pe_data$timestamp, format = "%Y-%m-%d %H:%M:%S")
 pe_data$timestamp <- strptime(pe_data$timestamp, "%Y-%m-%d")
 pe_data <- add_timeNumber(pe_data)
 
-# add experimental design information
-
 # add extra columns from the experimental design
 pe_data <- add_exp_des_col(data = pe_data, d_exp_des = d_exp,
-                        data_unit = "unit",
-                        d_exp_unit = "new_unit",
-                        col_add = c("rowNum", "colNum", "block", "cross"))
+                           data_unit = "unit",
+                           d_exp_unit = "new_unit",
+                           col_add = c("rowNum", "colNum", "block", "cross"))
 
 # PlotId is the combination of row and col information
 pe_data$plotId <- paste0(paste0("c", pe_data$colNum), paste0("r", pe_data$rowNum))
 
 # arrange the columns in a certain order
-pe_data <- pe_data %>% select(timeNumber, timestamp, block, rowNum, colNum, plotId, cross,
-                             genotype, Digital_biomass, Height, Leaf_angle, Leaf_area, Leaf_area_index,
-                             Leaf_area_projected, Leaf_inclination, Light_penetration_depth) %>% rename(timePoint = timestamp)
+pe_data <- pe_data %>% select(timeNumber, timestamp, block, rowNum, colNum, plotId,
+                              cross, genotype, Digital_biomass, Height,
+                              Leaf_angle, Leaf_area, Leaf_area_index,
+                              Leaf_area_projected, Leaf_inclination,
+                              Light_penetration_depth) %>% rename(timePoint = timestamp)
 
 # PE pipeline: Median calculation ----
 pe_data <- median_computation(pe_data)
 
-# select time window and plot trend ----
+# PE pipeline: remove tp with too high missing values ----
 
 plot_trend(data = pe_data, trait = "Height")
 plot_trend(data = pe_data, trait = "Leaf_area")
 plot_trend(data = pe_data, trait = "Digital_biomass")
 
-# select specific timepoints (days)
 prop_non_miss <- timepoint_prop_non_missing(pe_data)
-d_sel_days <- data.frame(tp = names(prop_non_miss),
-                         prop = prop_non_miss,
-                         sel = prop_non_miss > 0.3)
-
-sel_days <- d_sel_days$tp[d_sel_days$sel]
-d_end_rm <- 4
-day_rm <- (length(sel_days) - (d_end_rm - 1)):length(sel_days)
-sel_days <- sel_days[-day_rm]
-d_sel_days <- d_sel_days[-day_rm, ]
-
-pe_data <- pe_data[pe_data$timePoint %in% sel_days, ]
+tp_rem <- names(prop_non_miss[prop_non_miss < 0.3])
+if(length(tp_rem) > 0){
+  pe_data <- pe_data[!(pe_data$timePoint %in% tp_rem), ]
+}
 
 plot_trend(data = pe_data, trait = "Height")
 plot_trend(data = pe_data, trait = "Leaf_area")
 plot_trend(data = pe_data, trait = "Digital_biomass")
 
-# detect the outliers using boxplot
+# PE pipeline: remove outliers ----
 
 pe_data <- outlier_boxplot_detect(pe_data)
+
+plot_trend(data = pe_data, trait = "Height")
+plot_trend(data = pe_data, trait = "Leaf_area")
+plot_trend(data = pe_data, trait = "Digital_biomass")
+
+# PE pipeline: trim the time series ----
+
+# for example remove days at the beginning or the end
+
+sel_tp <- sort(unique(pe_data$timePoint)) # all tp in the TS
+sel_tp <- sel_tp[-c(17:20)] # remove four last days
+
+pe_data <- pe_data[pe_data$timePoint %in% sel_tp, ]
 
 plot_trend(data = pe_data, trait = "Height")
 plot_trend(data = pe_data, trait = "Leaf_area")
@@ -483,21 +490,12 @@ TP_PE <- createTimePoints(dat = pe_data,
 
 # PE pipeline: Spatial adjustment ----
 
-TP = TP_PE
-traits = c("Height", "Leaf_area", "Digital_biomass")
-what = "fixed"
-useCheck = FALSE
-useRepId = FALSE
-engine = "SpATS"
-spatial = FALSE
-quiet = FALSE
-
 PE_adjusted <- spatial_adjustment(TP = TP_PE,
                                   traits = c("Height", "Leaf_area", "Digital_biomass"),
                                   timePoints = NULL,
                                   extraFixedFactors = "block",
                                   geno.decomp = NULL,
-                                  what = "random",
+                                  what = "fixed",
                                   useCheck = FALSE,
                                   useRepId = FALSE,
                                   engine = "SpATS",
@@ -507,6 +505,7 @@ PE_adjusted <- spatial_adjustment(TP = TP_PE,
 plot_PE_adj <- PE_adjusted$plot_res
 geno_PE_adj <- PE_adjusted$geno_res
 comp_mon <- PE_adjusted$comp_monitor
+h2_PE <- PE_adjusted$h2_res
 
 plot_trend(data = plot_PE_adj, trait = "Height_corr")
 plot_trend(data = plot_PE_adj, trait = "Digital_biomass_corr")
@@ -515,36 +514,62 @@ plot_trend(data = geno_PE_adj, trait = "Leaf_area_pred", genotype = TRUE)
 plot_trend(data = geno_PE_adj, trait = "Height_pred", genotype = TRUE)
 
 # save the data
-setwd("D:/Mes Donnees/WD/R/packages/data/LS_pipeline_toyexample")
+setwd(ref_wd)
 save(plot_PE_adj, file = "PE_plot_adjusted.RData")
 save(geno_PE_adj, file = "PE_geno_adjusted.RData")
+save(h2_PE, file = "h2_PE.RData")
 
-##### SAVE H2 res.
-
-# use here the function spatial_adjustment when it is done. Take the time to
-# make it smooth.
 ############################ Weather data comp #################################
+# Weather data full TS computation ----
+# get the weather data time series information
+setwd(ref_wd)
+load(file = "sensor_data_processed.RData")
+load(file = "weather_data_processed.RData")
 
-############################ merge LC and PE ###################################
-# LC + PE results merging ----
+wth_data <- wth_data_proc(wth_data = wth_data, sensor_data = sensor_data)
 
-# load the adjusted LC data
-setwd("D:/Mes Donnees/WD/R/packages/data/LS_pipeline_toyexample")
+# reduce the values over days
+wth_data <- wth_data %>% group_by(dmy) %>% summarise(T_min = min(Temp, na.rm = TRUE),
+                                                     T_max = max(Temp, na.rm = TRUE),
+                                                     T_av = mean(Temp, na.rm = TRUE),
+                                                     RH_av = mean(RH, na.rm = TRUE),
+                                                     VPD_av = mean(VPD, na.rm = TRUE),
+                                                     SR_av = mean(SR, na.rm = TRUE),
+                                                     WS_av = mean(WS, na.rm = TRUE))
+colnames(wth_data)[1] <- "timePoint"
+wth_data$timePoint <- as.character(wth_data$timePoint)
+
+# save wth data results
+save(wth_data, file = "weather_data_full_TS.RData")
+
+############################ merge LC + PE + wth ###############################
+# load the adjusted data ----
+setwd(ref_wd)
 load(file = "LC_plot_adjusted.RData")
 load(file = "LC_geno_adjusted.RData")
 
 load(file = "PE_plot_adjusted.RData")
 load(file = "PE_geno_adjusted.RData")
 
-# merge
+load(file = "weather_data_full_TS.RData")
 
+# merge - plot data ----
 plot_LC_adj <- plot_LC_adj[, -1]
 plot_PE_adj <- plot_PE_adj[, -1]
 
 # plot_data <- full_join(x = plot_LC_adj, y = plot_PE_adj, by = c("timePoint", "plotId"))
 plot_data <- full_join(x = plot_LC_adj, y = plot_PE_adj,
-                        by = intersect(colnames(plot_LC_adj), colnames(plot_PE_adj)))
+                       by = intersect(colnames(plot_LC_adj), colnames(plot_PE_adj)))
 
+# add wth data
+plot_data$timePoint <- as.character(plot_data$timePoint)
+plot_data <- left_join(x = plot_data, y = wth_data, by = "timePoint") %>%
+  arrange(timePoint)
+
+# save final data
+save(plot_data, file = "plot_data.RData")
+
+# merge - geno data ----
 geno_LC_adj <- geno_LC_adj[, -1]
 geno_PE_adj <- geno_PE_adj[, -1]
 
@@ -552,30 +577,56 @@ geno_PE_adj <- geno_PE_adj[, -1]
 geno_data <- full_join(x = geno_LC_adj, y = geno_PE_adj,
                        by = intersect(colnames(geno_LC_adj), colnames(geno_PE_adj)))
 
-# addition of weather data ----
+# add wth data
+geno_data <- left_join(x = geno_data, y = wth_data, by = "timePoint") %>%
+  arrange(timePoint)
 
-# get the weather data time series information
-setwd("D:/Mes Donnees/WD/R/packages/data/LS_pipeline_toyexample")
-load(file = "sensor_data_processed.RData")
-load(file = "weather_data_processed.RData")
+# save final data
+save(geno_data, file = "geno_data.RData")
 
-wth_data <- wth_data_proc(wth_data = wth_data, sensor_data = sensor_data)
+# form a TP object for diagnostic plot ----
+setwd(ref_wd)
+load(file = "plot_data.RData")
 
-# reduce the values over days
-wth_data_red <- wth_data %>% group_by(dmy) %>% summarise(T_min = min(Temp, na.rm = TRUE),
-                                                     T_max = max(Temp, na.rm = TRUE),
-                                                     T_av = mean(Temp, na.rm = TRUE),
-                                                     RH_av = mean(RH, na.rm = TRUE),
-                                                     VPD_av = mean(VPD, na.rm = TRUE),
-                                                     SR_av = mean(SR, na.rm = TRUE),
-                                                     WS_av = mean(WS, na.rm = TRUE))
-colnames(wth_data_red)[1] <- "timePoint"
-wth_data_red$timePoint <- as.character(wth_data_red$timePoint)
+TP <- createTimePoints(dat = plot_data,
+                       experimentName = "Exp_51_Kenin_Keni",
+                       genotype = "genotype",
+                       timePoint = "timePoint",
+                       plotId = "plotId",
+                       rowNum = "rowId", colNum = "colId")
 
-# merge the weather data with the plot or geno data.
-plot_data$timePoint <- as.character(plot_data$timePoint)
-plot_data <- left_join(x = plot_data, y = wth_data_red, by = "timePoint")
+#### day 3 ----
 
-wth_data_red$timePoint %in% plot_data$timePoint
+tp <- 3
 
-geno_data <- left_join(x = geno_data, y = wth_data_red, by = "timePoint")
+plot(TP, traits = "max_TR",
+     plotType = "layout",
+     timePoints = tp)
+
+plot(TP, traits = "max_TR_corr",
+     plotType = "layout",
+     timePoints = tp)
+
+plot(TP, traits = "total_auc",
+     plotType = "layout",
+     timePoints = tp)
+
+plot(TP, traits = "total_auc_corr",
+     plotType = "layout",
+     timePoints = tp)
+
+plot(TP, traits = "Height",
+     plotType = "layout",
+     timePoints = tp)
+
+plot(TP, traits = "Height_corr",
+     plotType = "layout",
+     timePoints = tp)
+
+plot(TP, traits = "Digital_biomass",
+     plotType = "layout",
+     timePoints = tp)
+
+plot(TP, traits = "Digital_biomass_corr",
+     plotType = "layout",
+     timePoints = tp)

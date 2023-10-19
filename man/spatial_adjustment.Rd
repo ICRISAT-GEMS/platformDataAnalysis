@@ -11,6 +11,7 @@ spatial_adjustment(
   extraFixedFactors = NULL,
   geno.decomp = NULL,
   what = c("random", "fixed"),
+  h2_comp = TRUE,
   useCheck = FALSE,
   useRepId = FALSE,
   engine = c("SpATS", "asreml"),
@@ -35,6 +36,9 @@ that should be included in the adjustment.}
 \item{what}{character string specifying if the genotype term should be fitted
 as random or as fixed.}
 
+\item{h2_comp}{logical value specifying if heritability should be computed.
+If the geno term (what) is fixed. It will change to "random".}
+
 \item{useCheck}{logical value specifying if check term should be included
 in the model. For more detail see fitModels function from the statGenHTP package.}
 
@@ -48,7 +52,8 @@ in the model. For more detail see fitModels function from the statGenHTP package
 }
 \value{
 list with three data frame containing the: a) adjusted plot data;
-b) the adjusted genotype data; c) the way the adjustment was performed
+b) the adjusted genotype data; c) the way the adjustment was performed;
+d) table with heritability values (if spatial adjustment could be calculated).
 }
 \description{
 Function performing spatial adjustment for a list of traits data

@@ -27,6 +27,9 @@
 #' @param what character string specifying if the genotype term should be fitted
 #' as random or as fixed.
 #'
+#' @param h2_comp logical value specifying if heritability should be computed.
+#' If the geno term (what) is fixed. It will change to "random".
+#'
 #' @param useCheck logical value specifying if check term should be included
 #' in the model. For more detail see fitModels function from the statGenHTP package.
 #'
@@ -39,12 +42,14 @@
 #' @param quiet logical value specifying if the timepoint should be printed
 #'
 #' @return list with three data frame containing the: a) adjusted plot data;
-#' b) the adjusted genotype data; c) the way the adjustment was performed
+#' b) the adjusted genotype data; c) the way the adjustment was performed;
+#' d) table with heritability values (if spatial adjustment could be calculated).
 #'
 #' @import SpATS
 #' @import lubridate
 #' @import ggplot2
 #' @import tidyr
+#' @import drc
 #'
 #' @export
 
@@ -52,6 +57,7 @@ spatial_adjustment <- function(TP, traits, timePoints = NULL,
                                extraFixedFactors = NULL,
                                geno.decomp = NULL,
                                what = c("random", "fixed"),
+                               h2_comp = TRUE,
                                useCheck = FALSE,
                                useRepId = FALSE,
                                engine = c("SpATS", "asreml"),
@@ -63,13 +69,13 @@ spatial_adjustment <- function(TP, traits, timePoints = NULL,
   if(is.null(timePoints)){tp_vec <- 1:length(TP) } else {tp_vec <- timePoints}
   n_tp <- length(tp_vec)
 
-  # reference matrix to monitor the computation
+  # reference matrix to monitor the computation and store h2
   comp_monitor <- matrix(NA, nrow =  n_traits, ncol = n_tp)
-  rownames(comp_monitor) <- traits
-  colnames(comp_monitor) <- names(TP)[tp_vec]
+  h2_res <- matrix(NA, nrow =  n_traits, ncol = n_tp)
+  rownames(comp_monitor) <- rownames(h2_res) <- traits
+  colnames(comp_monitor) <- colnames(h2_res) <- names(TP)[tp_vec]
 
   # reference plot and geno data.frame
-
   d_TP <- do.call(what = rbind, args = TP)
   geno_pos <- which(colnames(d_TP) == 'genotype')
   plot_res_ref <- d_TP[, 1:geno_pos]
@@ -106,11 +112,34 @@ spatial_adjustment <- function(TP, traits, timePoints = NULL,
                                          extraFixedFactors = extraFixedFactors,
                                          geno.decomp = geno.decomp, what = what,
                                          useCheck = useCheck, useRepId = useRepId,
-                                         engine = engine, spatial = spatial, quiet = quiet)
+                                         engine = engine, spatial = spatial,
+                                         quiet = quiet)
 
       plot_res_ij[[j]] <- tr_adj_ij$plot_adj
       geno_res_ij[[j]] <- tr_adj_ij$geno_adj
       comp_monitor[i, j] <- tr_adj_ij$adj_type
+
+      # store the heritability with recalculation if geno was fixed
+      if(h2_comp){
+
+        if(what == "random"){
+
+          h2_res[i, j] <- tr_adj_ij$h2
+
+        } else {
+
+          tr_adj_ij <- spatial_adjustment_ij(TP = TP, tr_id = traits[i], tp = j,
+                                             extraFixedFactors = extraFixedFactors,
+                                             geno.decomp = geno.decomp, what = "random",
+                                             useCheck = useCheck, useRepId = useRepId,
+                                             engine = engine, spatial = spatial,
+                                             quiet = quiet)
+          h2_res[i, j] <- tr_adj_ij$h2
+
+        }
+
+
+      }
 
     } # end loop over timepoints
 
@@ -136,6 +165,6 @@ spatial_adjustment <- function(TP, traits, timePoints = NULL,
   } # end loop over traits
 
   return(list(plot_res = plot_res_ref, geno_res = geno_res_ref,
-              comp_monitor = comp_monitor))
+              comp_monitor = comp_monitor, h2_res = h2_res))
 
 }

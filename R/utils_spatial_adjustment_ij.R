@@ -78,7 +78,8 @@ spatial_adjustment_ij <- function(TP, tr_id, tp, extraFixedFactors, geno.decomp,
 
         }
 
-        return(list(plot_adj = plot_adj, geno_adj = geno_adj, adj_type = adj_type))
+        return(list(plot_adj = plot_adj, geno_adj = geno_adj, adj_type = adj_type,
+                    h2 = NA))
 
       } else {
 
@@ -93,8 +94,11 @@ spatial_adjustment_ij <- function(TP, tr_id, tp, extraFixedFactors, geno.decomp,
 
         geno_adj <- getGenoPred(tr_adj)
         geno_adj <- geno_adj$genoPred
+
+        if(what == 'random'){h2 <- getHerit(tr_adj)[1, 3]} else {h2 <- NA}
+
         return(list(plot_adj = plot_adj, geno_adj = geno_adj,
-                    adj_type = "spatial_only"))
+                    adj_type = "spatial_only", h2 = h2))
 
       }
 
@@ -104,8 +108,11 @@ spatial_adjustment_ij <- function(TP, tr_id, tp, extraFixedFactors, geno.decomp,
       colnames(plot_adj)[5] <- paste0(tr_id, "_wt")
       geno_adj <- getGenoPred(tr_adj)
       geno_adj <- geno_adj$genoPred
+
+      if(what == 'random'){h2 <- getHerit(tr_adj)[1, 3]} else {h2 <- NA}
+
       return(list(plot_adj = plot_adj, geno_adj = geno_adj,
-                  adj_type = "design_and_spatial"))
+                  adj_type = "design_and_spatial", h2 = h2))
 
     }
 
@@ -161,7 +168,8 @@ spatial_adjustment_ij <- function(TP, tr_id, tp, extraFixedFactors, geno.decomp,
 
       }
 
-      return(list(plot_adj = plot_adj, geno_adj = geno_adj, adj_type = adj_type))
+      return(list(plot_adj = plot_adj, geno_adj = geno_adj, adj_type = adj_type,
+                  h2 = NA))
 
     } else {
 
@@ -169,7 +177,11 @@ spatial_adjustment_ij <- function(TP, tr_id, tp, extraFixedFactors, geno.decomp,
       colnames(plot_adj)[5] <- paste0(tr_id, "_wt")
       geno_adj <- getGenoPred(tr_adj)
       geno_adj <- geno_adj$genoPred
-      return(list(plot_adj = plot_adj, geno_adj = geno_adj, adj_type = "spatial_only"))
+
+      if(what == 'random'){h2 <- getHerit(tr_adj)[1, 3]} else {h2 <- NA}
+
+      return(list(plot_adj = plot_adj, geno_adj = geno_adj, adj_type = "spatial_only",
+                  h2 = h2))
 
     }
 
